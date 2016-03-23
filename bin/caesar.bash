@@ -5,10 +5,6 @@
 #
 # CSRs and private keys will be created in each subdirectory, with a timestamp.
 
-O="Helix OpCo LLC"
-L="San Francisco"
-ST="California"
-
 ## Usage: caeser [options]
 ##
 ##     -a    Match all directories
