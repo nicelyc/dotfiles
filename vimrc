@@ -12,6 +12,7 @@ call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
 
 Plugin 'tpope/vim-fugitive'
+Plugin 'flazz/vim-colorschemes'
 
 " All of your Plugins must be added before the following line
 call vundle#end()          " required
@@ -26,3 +27,6 @@ set smarttab
 set ruler                  " show line,column number
 set number                 " show line numbers
 set nowrap
+
+colo distinguished
+syntax on
