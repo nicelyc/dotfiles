@@ -13,11 +13,24 @@
 ##     -l    Locality/City (CSR)
 ##     -s    State (CSR)
 ##     -t    Match all directories ending in a specified tld (e.g. com)
+##     -n    List of SANs to add to the certificate (comma delimited)
+##
+## Examples:
+##   In each case, the domain(s) are represented by a folder (or folders) of the same name in the current
+##   working directory.
+##
+##   Generate a CSR for every domain
+##     caeser -a -o "Foo, Inc." -l "San Francisco" -s "California"
+##   Generate a CSR for a single domain (foo.com)
+##     caeser -d foo.com -o "Foo, Inc." -l "San Francisco" -s "California"
+##   Generate a CSR with Subject Alternative Names (a.bar.com, b.bar.com) for a single domain (foo.com)
+##     caeser -d bar.com -o "Bar, Inc." -l "San Francisco" -s "California" -n "a.bar.com,b.bar.com"
+##
 
 help=$(grep "^## " "${BASH_SOURCE[0]}" | cut -c 4-)
 
 # get command line args
-while getopts "ac:d:hl:o:s:t:" opt; do
+while getopts "ac:d:hl:n:o:s:t:" opt; do
   case $opt in
     a) pattern="*"
        ;;
@@ -27,6 +40,8 @@ while getopts "ac:d:hl:o:s:t:" opt; do
        exit 0;
        ;;
     l) l="${OPTARG}"
+       ;;
+    n) n="${OPTARG}"
        ;;
     o) o="${OPTARG}"
        ;;
@@ -75,11 +90,25 @@ for d in ${pattern}; do
          key_switch="-key"
        fi 
       fi
+
+      # build CSR command      
+      cmd='openssl req -new -out "${csr}" ${key_switch} "${key}" -subj "/C=US/ST=${st}/L=${l}/O=${o}/CN=${cn}"'
       
-      # generate csr (and key, if applicable)
-      openssl req -new -out "${csr}" ${key_switch} "${key}" -subj "/C=US/ST=${st}/L=${l}/O=${o}/CN=${cn}"
+      # SANs (-n passed)
+      if [ "${n}" ]; then
+        san_config="[ req ]\ndistinguished_name = dn\nreq_extensions = v3_req\n[ dn ]\n[ v3_req ]\nsubjectAltName = @alt_names\n[ alt_names ]"
+
+        # add DNS.n entry for each comma delimited SAN
+        IFS=',' read -ra san <<< "${n}"
+        i=1; for name in "${san[@]}"; do san_config=${san_config}"\nDNS.${i} = ${name}"; let i+=1; done
+
+        # add -config option
+        cmd=${cmd}' -config <(echo -e ${san_config})'
+      fi
+
+      # generate CSR
+      eval "${cmd}"
+
     fi
-      
-    echo
   fi
 done
